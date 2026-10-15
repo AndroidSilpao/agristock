@@ -1,0 +1,75 @@
+{% extends "theme/base.html" %}
+{% block content %}
+{% include "livestock/_styles.html" %}
+<main class="farm-page">
+  <header class="farm-page-header">
+    <div>
+      <div class="farm-eyebrow" style="color:#597865"><span class="farm-live-dot" style="background:#48a36e;box-shadow:0 0 0 4px #e4f2e8"></span> HERD MANAGEMENT</div>
+      <h1>Your animals</h1>
+      <p>Keep tags, breeds, status and animal details together.</p>
+    </div>
+    <a href="{% url 'animal_add' %}" class="farm-button farm-button-primary"><i class="fa-solid fa-plus"></i> Add animal</a>
+  </header>
+  {% include "theme/messages.html" %}
+
+  <div class="farm-toolbar">
+    <form method="get" class="farm-search" role="search">
+      <input type="search" name="q" value="{{ query }}" class="form-control" placeholder="Search tag, name, species or breed" aria-label="Search animals">
+      {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+      <button class="farm-button farm-button-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-sm-inline">Search</span></button>
+      {% if query or status_filter %}<a class="farm-button farm-button-muted" href="{% url 'animals' %}">Clear</a>{% endif %}
+    </form>
+    <form method="get" class="d-flex gap-2">
+      {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+      <label class="visually-hidden" for="animal-status">Filter by status</label>
+      <select class="form-select" name="status" id="animal-status" onchange="this.form.submit()" aria-label="Filter by status">
+        <option value="">All statuses</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+        <option value="sold" {% if status_filter == 'sold' %}selected{% endif %}>Sold</option>
+        <option value="deceased" {% if status_filter == 'deceased' %}selected{% endif %}>Deceased</option>
+      </select>
+    </form>
+    <a class="farm-button farm-button-muted" href="{% url 'animals_export' %}?q={{ query|urlencode }}&status={{ status_filter|urlencode }}"><i class="fa-solid fa-download"></i> Export CSV</a>
+  </div>
+
+  <section class="farm-table-card">
+    <div class="table-responsive">
+      <table class="table table-vcenter table-hover">
+        <thead><tr><th>Animal</th><th>Species & breed</th><th>Sex</th><th>Date of birth</th><th>Status</th><th>Purchase value</th><th class="text-end">Actions</th></tr></thead>
+        <tbody>
+          {% for animal in animals %}
+          <tr>
+            <td>
+              <div class="farm-primary-cell">{{ animal.name|default:animal.tag }}</div>
+              <div class="farm-secondary-cell">Tag {{ animal.tag }}</div>
+            </td>
+            <td><div>{{ animal.species }}</div><div class="farm-secondary-cell">{{ animal.breed|default:"Breed not set" }}</div></td>
+            <td>{{ animal.get_sex_display }}</td>
+            <td>{{ animal.date_of_birth|date:"M j, Y"|default:"—" }}</td>
+            <td><span class="farm-status farm-status-{{ animal.status }}">{{ animal.get_status_display }}</span></td>
+            <td>{{ animal.purchase_value|floatformat:2 }}</td>
+            <td>
+              <div class="farm-actions">
+                <a class="farm-action-button" href="{% url 'animal_edit' animal.pk %}" title="Edit {{ animal.tag }}" aria-label="Edit {{ animal.tag }}"><i class="fa-solid fa-pen"></i></a>
+                <form method="post" action="{% url 'animal_delete' animal.pk %}" onsubmit="return confirm('Remove {{ animal.tag|escapejs }} from your herd? This will also unlink its farm records.');">
+                  {% csrf_token %}
+                  <button class="farm-action-button farm-delete-button" type="submit" title="Delete {{ animal.tag }}" aria-label="Delete {{ animal.tag }}"><i class="fa-regular fa-trash-can"></i></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7"><div class="farm-empty-inline"><span class="farm-empty-icon"><i class="fa-solid fa-cow"></i></span><strong>{% if query or status_filter %}No animals match those filters{% else %}Your herd is ready to grow{% endif %}</strong><small>{% if query or status_filter %}Try another search or clear the filters.{% else %}Add your first animal to start tracking your herd.{% endif %}</small>{% if not query and not status_filter %}<a class="farm-button farm-button-primary mt-3" href="{% url 'animal_add' %}">Add your first animal</a>{% endif %}</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if animals.paginator.num_pages > 1 %}
+    <div class="farm-pagination">
+      <span>Showing {{ animals.start_index }}–{{ animals.end_index }} of {{ animals.paginator.count }} · {{ total_animals }} total animals</span>
+      <span>{% if animals.has_previous %}<a href="?page={{ animals.previous_page_number }}&q={{ query|urlencode }}&status={{ status_filter|urlencode }}">← Previous</a>{% endif %} {% if animals.has_previous and animals.has_next %} · {% endif %}{% if animals.has_next %}<a href="?page={{ animals.next_page_number }}&q={{ query|urlencode }}&status={{ status_filter|urlencode }}">Next →</a>{% endif %}</span>
+    </div>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

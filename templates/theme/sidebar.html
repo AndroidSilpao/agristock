@@ -1,0 +1,107 @@
+<aside class="navbar navbar-vertical navbar-expand-lg navbar-dark dh-sidebar">
+  <div class="container-fluid">
+    <div class="navbar-brand navbar-brand-autodark dh-brand">
+      <a href="{% url 'dashboard' %}" class="d-flex align-items-center gap-2 text-decoration-none">
+        <span class="dh-brand-mark"><i class="fa-solid fa-leaf"></i></span>
+        <span class="lh-1">
+          <span class="dh-brand-name">Agri<span class="text-warning">Stock</span></span>
+          <span class="dh-brand-sub">Farm operations, in real time</span>
+        </span>
+      </a>
+    </div>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="sidebar-menu">
+      <ul class="navbar-nav pt-lg-2 py-lg-2">
+        <li class="nav-item"><span class="dh-nav-section">FARM</span></li>
+        <li class="nav-item mb-1">
+          <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="fa-solid fa-chart-pie"></i></span>
+            <span class="nav-link-title">Overview</span>
+          </a>
+        </li>
+        <li class="nav-item mb-1">
+          <a class="nav-link {% if request.resolver_match.url_name == 'animals' or request.resolver_match.url_name == 'animal_add' or request.resolver_match.url_name == 'animal_edit' %}active{% endif %}" href="{% url 'animals' %}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="fa-solid fa-paw"></i></span>
+            <span class="nav-link-title">Animals</span>
+          </a>
+        </li>
+
+        <li class="nav-item"><span class="dh-nav-section">RECORDS</span></li>
+        <li class="nav-item mb-1">
+          <a class="nav-link {% if record_type == 'finance' %}active{% endif %}" href="{% url 'records' %}?type=finance">
+            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="fa-solid fa-coins"></i></span>
+            <span class="nav-link-title">Finance</span>
+          </a>
+        </li>
+        <li class="nav-item mb-1">
+          <a class="nav-link" href="{% url 'animals_export' %}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="fa-solid fa-file-export"></i></span>
+            <span class="nav-link-title">Export animals</span>
+          </a>
+        </li>
+        <li class="nav-item mb-1">
+          <a class="nav-link {% if record_type == 'feed' %}active{% endif %}" href="{% url 'records' %}?type=feed">
+            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="fa-solid fa-wheat-awn"></i></span>
+            <span class="nav-link-title">Feed</span>
+          </a>
+        </li>
+        <li class="nav-item mb-1">
+          <a class="nav-link {% if record_type == 'health' %}active{% endif %}" href="{% url 'records' %}?type=health">
+            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="fa-solid fa-heart-pulse"></i></span>
+            <span class="nav-link-title">Health</span>
+          </a>
+        </li>
+        <li class="nav-item mb-1">
+          <a class="nav-link" href="{% url 'records_export' %}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="fa-solid fa-file-export"></i></span>
+            <span class="nav-link-title">Export records</span>
+          </a>
+        </li>
+
+        <li class="nav-item"><span class="dh-nav-section">WORKSPACE</span></li>
+        <li class="nav-item mb-1">
+          <a class="nav-link {% if request.resolver_match.app_name == 'users' %}active{% endif %}" href="{% url 'users:user_list' %}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="fa-solid fa-users"></i></span>
+            <span class="nav-link-title">Users</span>
+          </a>
+        </li>
+        <li class="nav-item mb-1">
+          <a class="nav-link {% if request.resolver_match.app_name == 'info' %}active{% endif %}" href="{% url 'info:info_list' %}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="fa-solid fa-address-card"></i></span>
+            <span class="nav-link-title">Info</span>
+          </a>
+        </li>
+
+        {% if user.is_authenticated %}
+        <li class="nav-item d-lg-none">
+          <a class="nav-link" href="{% url 'logout' %}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="fa-solid fa-arrow-right-from-bracket"></i></span>
+            <span class="nav-link-title">Sign out</span>
+          </a>
+        </li>
+        {% endif %}
+
+        <li class="nav-item mt-auto dh-nav-sidebar-footer">
+          <div class="dh-user-card">
+            <a href="{% url 'dashboard' %}" class="d-flex align-items-center gap-2 text-decoration-none text-white min-w-0 w-100">
+              <span class="dh-avatar">{{ user.username|first|upper }}</span>
+              <span class="min-w-0 flex-grow-1">
+                <span class="dh-user-name">{{ user.get_full_name|default:user.username }}</span>
+                <span class="dh-user-role">{% if user.is_superuser %}Administrator{% else %}Farm account{% endif %}</span>
+              </span>
+            </a>
+            {% if user.is_authenticated %}
+            <a href="{% url 'logout' %}" class="dh-user-logout" title="Sign out" aria-label="Sign out">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </a>
+            {% endif %}
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</aside>

@@ -1,0 +1,73 @@
+{% extends "theme/base.html" %}
+{% block content %}
+{% include "livestock/_styles.html" %}
+<main class="farm-page">
+  <header class="farm-page-header">
+    <div>
+      <div class="farm-eyebrow" style="color:#597865"><span class="farm-live-dot" style="background:#48a36e;box-shadow:0 0 0 4px #e4f2e8"></span> FARM RECORDKEEPING</div>
+      <h1>{{ page_title }}</h1>
+      <p>{% if form_kind == 'animal' %}Add clear, consistent details for every animal on your farm.{% else %}Keep your finance, feed and animal health information in one reliable log.{% endif %}</p>
+    </div>
+  </header>
+  {% include "theme/messages.html" %}
+
+  <section class="farm-form-card">
+    {% if form_kind == 'record' %}
+    <div class="farm-record-type-help"><i class="fa-solid fa-circle-info me-1"></i> {% if record_type == 'feed' %}Log feed type, quantity used and its cost. Leave the animal blank for herd-wide feed.{% elif record_type == 'health' %}Log care, treatment or a check-up. Add a next due date to create a dashboard reminder.{% else %}Use <strong>income</strong> for money received and <strong>expense</strong> for money spent. Amounts use your farm's preferred currency.{% endif %}</div>
+    {% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="farm-form-grid">
+        {% for field in form %}
+        <div class="mb-3 {% if field.name == 'notes' %}farm-form-notes{% endif %}">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="text-danger ms-1">*</span>{% else %}<span class="text-muted fw-normal ms-1">(optional)</span>{% endif %}</label>
+          {% if field.name == 'category' and form_kind == 'record' %}
+          <input type="text" name="{{ field.html_name }}" id="{{ field.id_for_label }}" value="{{ field.value|default_if_none:'' }}" class="form-control{% if field.errors %} is-invalid{% endif %}" list="farm-category-options" placeholder="Choose or enter a category" required>
+          <datalist id="farm-category-options"></datalist>
+          {% else %}
+          {{ field }}
+          {% endif %}
+          {% if field.help_text %}<div class="farm-form-hint">{{ field.help_text }}</div>{% endif %}
+          {% for error in field.errors %}<div class="farm-form-error">{{ error }}</div>{% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% if form_kind == 'animal' %}<p class="farm-form-hint">Tag numbers must be unique within your farm. Leave optional details blank if they aren't known yet.</p>{% endif %}
+      <div class="farm-form-actions">
+        <a class="farm-button farm-button-muted" href="{% if form_kind == 'animal' %}{% url 'animals' %}{% else %}{% url 'records' %}?type={{ record_type }}{% endif %}">Cancel</a>
+        <button class="farm-button farm-button-primary" type="submit"><i class="fa-solid fa-check"></i> {{ submit_label }}</button>
+      </div>
+    </form>
+  </section>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+{% if form_kind == 'record' %}
+<script>
+  (() => {
+    const typeField = document.getElementById("id_record_type");
+    const categoryField = document.getElementById("id_category");
+    const options = document.getElementById("farm-category-options");
+    const categories = {
+      finance: [["income", "Income"], ["expense", "Expense"]],
+      feed: [["hay", "Hay"], ["silage", "Silage"], ["concentrate", "Concentrate"], ["pasture", "Pasture"], ["supplement", "Supplement"], ["other", "Other"]],
+      health: [["vaccination", "Vaccination"], ["treatment", "Treatment"], ["check-up", "Check-up"], ["breeding", "Breeding"], ["preventive care", "Preventive care"], ["other", "Other"]]
+    };
+    const updateCategories = (reset) => {
+      const choices = categories[typeField.value] || [];
+      options.replaceChildren(...choices.map(([value, label]) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.label = label;
+        return option;
+      }));
+      if (reset) categoryField.value = typeField.value === "finance" ? "income" : "";
+    };
+    typeField.addEventListener("change", () => updateCategories(true));
+    updateCategories(false);
+  })();
+</script>
+{% endif %}
+{% endblock %}

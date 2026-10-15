@@ -1,0 +1,90 @@
+{% extends "theme/base.html" %}
+{% block content %}
+{% include "livestock/_styles.html" %}
+<main class="farm-page">
+  <header class="farm-page-header">
+    <div>
+      <div class="farm-eyebrow" style="color:#597865"><span class="farm-live-dot" style="background:#48a36e;box-shadow:0 0 0 4px #e4f2e8"></span> FARM OPERATIONS</div>
+      <h1>Farm records</h1>
+      <p>Track income, costs, feed use, treatments and care schedules.</p>
+    </div>
+    <a href="{% url 'record_add' %}?type={% if record_type == 'all' %}finance{% else %}{{ record_type }}{% endif %}" class="farm-button farm-button-primary"><i class="fa-solid fa-plus"></i> Add record</a>
+  </header>
+  {% include "theme/messages.html" %}
+
+  <nav class="farm-filter-tabs" aria-label="Filter record type">
+    <a class="farm-filter-tab {% if record_type == 'all' %}active{% endif %}" href="{% url 'records' %}">All records</a>
+    <a class="farm-filter-tab {% if record_type == 'finance' %}active{% endif %}" href="{% url 'records' %}?type=finance">Finance</a>
+    <a class="farm-filter-tab {% if record_type == 'feed' %}active{% endif %}" href="{% url 'records' %}?type=feed">Feed</a>
+    <a class="farm-filter-tab {% if record_type == 'health' %}active{% endif %}" href="{% url 'records' %}?type=health">Health</a>
+  </nav>
+
+  {% if record_type == 'all' or record_type == 'finance' %}
+  <section class="farm-finance-strip" aria-label="Finance totals for matching records">
+    <div class="farm-finance-metric"><small>Income</small><strong class="farm-positive">{{ income_total|floatformat:2 }}</strong></div>
+    <div class="farm-finance-metric"><small>Expenses</small><strong class="farm-negative">{{ expense_total|floatformat:2 }}</strong></div>
+    <div class="farm-finance-metric"><small>Net</small><strong class="{% if net_total < 0 %}farm-negative{% else %}farm-positive{% endif %}">{{ net_total|floatformat:2 }}</strong></div>
+  </section>
+  {% endif %}
+  {% if record_type == 'feed' %}
+  <section class="farm-finance-strip" aria-label="Feed quantities for matching records">
+    {% for total in feed_totals %}
+    <div class="farm-finance-metric"><small>Total feed{% if total.unit %} · {{ total.unit }}{% endif %}</small><strong>{{ total.total|floatformat:-2 }}</strong></div>
+    {% empty %}
+    <div class="farm-finance-metric"><small>Total feed logged</small><strong>0</strong></div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <div class="farm-toolbar">
+    <form method="get" class="farm-search" role="search">
+      <input type="hidden" name="type" value="{{ record_type }}">
+      <input type="search" name="q" value="{{ query }}" class="form-control" placeholder="Search title, category, animal or notes" aria-label="Search farm records">
+      <button class="farm-button farm-button-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i><span class="d-none d-sm-inline">Search</span></button>
+      {% if query %}<a class="farm-button farm-button-muted" href="{% url 'records' %}?type={{ record_type }}">Clear</a>{% endif %}
+    </form>
+    <a class="farm-button farm-button-muted" href="{% url 'records_export' %}?type={{ record_type }}{% if query %}&q={{ query|urlencode }}{% endif %}"><i class="fa-solid fa-download"></i> Export CSV</a>
+  </div>
+
+  <section class="farm-table-card">
+    <div class="table-responsive">
+      <table class="table table-vcenter table-hover">
+        <thead><tr><th>Date</th><th>Activity</th><th>Type / category</th><th>Animal</th><th>Quantity / amount</th><th>Next due</th><th class="text-end">Actions</th></tr></thead>
+        <tbody>
+          {% for record in records %}
+          <tr>
+            <td class="text-nowrap">{{ record.record_date|date:"M j, Y" }}</td>
+            <td><div class="farm-primary-cell">{{ record.title }}</div>{% if record.notes %}<div class="farm-secondary-cell">{{ record.notes|truncatechars:70 }}</div>{% endif %}</td>
+            <td><div>{{ record.get_record_type_display }}</div><div class="farm-secondary-cell">{{ record.category|title }}</div></td>
+            <td>{% if record.animal %}<div class="farm-primary-cell">{{ record.animal.tag }}</div><div class="farm-secondary-cell">{{ record.animal.name|default:record.animal.species }}</div>{% else %}<span class="farm-secondary-cell">Whole herd</span>{% endif %}</td>
+            <td class="text-nowrap">
+              {% if record.record_type == 'feed' and record.quantity %}<div class="farm-primary-cell">{{ record.quantity|floatformat:-2 }} {{ record.unit }}</div>{% endif %}
+              {% if record.record_type != 'feed' or record.amount %}<div class="{% if record.record_type == 'finance' and record.category == 'income' %}farm-positive{% elif record.record_type == 'finance' and record.category == 'expense' %}farm-negative{% endif %}">{{ record.amount|floatformat:2 }}</div>{% endif %}
+              {% if record.record_type == 'feed' and not record.amount and not record.quantity %}<span class="farm-secondary-cell">—</span>{% endif %}
+            </td>
+            <td class="text-nowrap">{{ record.next_due_date|date:"M j, Y"|default:"—" }}</td>
+            <td>
+              <div class="farm-actions">
+                <a class="farm-action-button" href="{% url 'record_edit' record.pk %}" title="Edit {{ record.title }}" aria-label="Edit {{ record.title }}"><i class="fa-solid fa-pen"></i></a>
+                <form method="post" action="{% url 'record_delete' record.pk %}" onsubmit="return confirm('Delete this farm record?');">
+                  {% csrf_token %}
+                  <button class="farm-action-button farm-delete-button" type="submit" title="Delete record" aria-label="Delete {{ record.title }}"><i class="fa-regular fa-trash-can"></i></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7"><div class="farm-empty-inline"><span class="farm-empty-icon"><i class="fa-solid fa-clipboard-list"></i></span><strong>{% if query %}No records match your search{% else %}No records in this view yet{% endif %}</strong><small>{% if query %}Try changing your search terms.{% else %}Log farm activity to build a clear picture of your operation.{% endif %}</small>{% if not query %}<a class="farm-button farm-button-primary mt-3" href="{% url 'record_add' %}?type={% if record_type == 'all' %}finance{% else %}{{ record_type }}{% endif %}">Add your first record</a>{% endif %}</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if records.paginator.num_pages > 1 %}
+    <div class="farm-pagination">
+      <span>Showing {{ records.start_index }}–{{ records.end_index }} of {{ records.paginator.count }} records</span>
+      <span>{% if records.has_previous %}<a href="?type={{ record_type }}&page={{ records.previous_page_number }}&q={{ query|urlencode }}">← Previous</a>{% endif %} {% if records.has_previous and records.has_next %} · {% endif %}{% if records.has_next %}<a href="?type={{ record_type }}&page={{ records.next_page_number }}&q={{ query|urlencode }}">Next →</a>{% endif %}</span>
+    </div>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

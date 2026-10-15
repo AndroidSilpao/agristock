@@ -1,0 +1,115 @@
+{% extends "theme/base.html" %}
+{% block content %}
+{% include "livestock/_styles.html" %}
+<main class="farm-page">
+  <section class="farm-hero">
+    <div>
+      <div class="farm-eyebrow"><span class="farm-live-dot"></span> AGRISTOCK · YOUR FARM, AT A GLANCE</div>
+      <h1>Good morning, {{ request.user.first_name|default:request.user.username }}.</h1>
+      <p>Digitize and streamline farm assets and logistics, replacing error-prone manual logs with real-time operations.</p>
+    </div>
+    <div class="farm-hero-actions">
+      <a href="{% url 'record_add' %}?type=finance" class="farm-button farm-button-light"><i class="fa-solid fa-plus"></i> Add a record</a>
+      <a href="{% url 'animal_add' %}" class="farm-button farm-button-outline"><i class="fa-solid fa-paw"></i> Add an animal</a>
+    </div>
+  </section>
+
+  {% include "theme/messages.html" %}
+
+  <section class="farm-stat-grid" aria-label="Farm summary">
+    <article class="farm-stat-card">
+      <div class="farm-stat-icon farm-icon-green"><i class="fa-solid fa-cow"></i></div>
+      <div class="farm-stat-label">Active herd</div>
+      <div class="farm-stat-value">{{ active_animals }}</div>
+      <div class="farm-stat-note">{{ total_animals }} animal{{ total_animals|pluralize }} on record</div>
+      <a class="farm-card-link" href="{% url 'animals' %}">View animals <i class="fa-solid fa-arrow-right"></i></a>
+    </article>
+    <article class="farm-stat-card">
+      <div class="farm-stat-icon farm-icon-blue"><i class="fa-solid fa-arrow-trend-up"></i></div>
+      <div class="farm-stat-label">Income this month</div>
+      <div class="farm-stat-value farm-stat-money">{{ income|floatformat:2 }}</div>
+      <div class="farm-stat-note">{{ today|date:"F Y" }}</div>
+      <a class="farm-card-link" href="{% url 'records' %}?type=finance">View finances <i class="fa-solid fa-arrow-right"></i></a>
+    </article>
+    <article class="farm-stat-card">
+      <div class="farm-stat-icon farm-icon-amber"><i class="fa-solid fa-arrow-trend-down"></i></div>
+      <div class="farm-stat-label">Expenses this month</div>
+      <div class="farm-stat-value farm-stat-money">{{ expenses|floatformat:2 }}</div>
+      <div class="farm-stat-note">Net: <strong class="{% if net < 0 %}farm-negative{% else %}farm-positive{% endif %}">{{ net|floatformat:2 }}</strong></div>
+      <a class="farm-card-link" href="{% url 'records' %}?type=finance">Review activity <i class="fa-solid fa-arrow-right"></i></a>
+    </article>
+    <article class="farm-stat-card">
+      <div class="farm-stat-icon farm-icon-violet"><i class="fa-solid fa-heart-pulse"></i></div>
+      <div class="farm-stat-label">Care & feed logs</div>
+      <div class="farm-stat-value">{{ health_records|add:feed_records }}</div>
+      <div class="farm-stat-note">{{ health_records }} health · {{ feed_records }} feed records</div>
+      <a class="farm-card-link" href="{% url 'records' %}?type=health">View care schedule <i class="fa-solid fa-arrow-right"></i></a>
+    </article>
+  </section>
+
+  <section class="farm-quick-grid" aria-label="Farm management">
+    <a class="farm-quick-card" href="{% url 'animals' %}">
+      <span class="farm-quick-icon farm-icon-green"><i class="fa-solid fa-horse"></i></span>
+      <span><strong>Animals</strong><small>Tags, breeds & herd status</small></span>
+      <i class="fa-solid fa-arrow-up-right-from-square farm-quick-arrow"></i>
+    </a>
+    <a class="farm-quick-card" href="{% url 'records' %}?type=finance">
+      <span class="farm-quick-icon farm-icon-blue"><i class="fa-solid fa-coins"></i></span>
+      <span><strong>Finance</strong><small>Income, costs & net totals</small></span>
+      <i class="fa-solid fa-arrow-up-right-from-square farm-quick-arrow"></i>
+    </a>
+    <a class="farm-quick-card" href="{% url 'records' %}?type=feed">
+      <span class="farm-quick-icon farm-icon-amber"><i class="fa-solid fa-wheat-awn"></i></span>
+      <span><strong>Feed</strong><small>Usage, quantities & costs</small></span>
+      <i class="fa-solid fa-arrow-up-right-from-square farm-quick-arrow"></i>
+    </a>
+    <a class="farm-quick-card" href="{% url 'records' %}?type=health">
+      <span class="farm-quick-icon farm-icon-violet"><i class="fa-solid fa-stethoscope"></i></span>
+      <span><strong>Health</strong><small>Treatments & upcoming care</small></span>
+      <i class="fa-solid fa-arrow-up-right-from-square farm-quick-arrow"></i>
+    </a>
+  </section>
+
+  <section class="farm-dashboard-grid">
+    <article class="farm-panel">
+      <div class="farm-panel-heading">
+        <div><span class="farm-panel-kicker">KEEP ON TRACK</span><h2>Upcoming care</h2></div>
+        <a class="farm-text-link" href="{% url 'records' %}?type=health">See health log <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+      <div class="farm-list">
+        {% for record in upcoming %}
+        <div class="farm-list-row">
+          <span class="farm-list-icon farm-icon-violet"><i class="fa-solid fa-heart-pulse"></i></span>
+          <div class="farm-list-copy"><strong>{{ record.title }}</strong><small>{% if record.animal %}{{ record.animal.tag }} · {{ record.animal.name|default:record.animal.species }}{% else %}Whole herd{% endif %}</small></div>
+          <span class="farm-date-pill">{% if record.next_due_date < today %}Overdue{% else %}{{ record.next_due_date|date:"M j" }}{% endif %}</span>
+        </div>
+        {% empty %}
+        <div class="farm-empty-inline"><span class="farm-empty-icon"><i class="fa-regular fa-calendar-check"></i></span><strong>You're all caught up</strong><small>Health reminders with a due date will show here.</small></div>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="farm-panel">
+      <div class="farm-panel-heading">
+        <div><span class="farm-panel-kicker">LATEST ACTIVITY</span><h2>Recent records</h2></div>
+        <a class="farm-text-link" href="{% url 'records' %}">View all <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+      <div class="farm-list">
+        {% for record in recent_records %}
+        <div class="farm-list-row">
+          <span class="farm-list-icon {% if record.record_type == 'finance' %}farm-icon-blue{% elif record.record_type == 'feed' %}farm-icon-amber{% else %}farm-icon-violet{% endif %}">
+            {% if record.record_type == 'finance' %}<i class="fa-solid fa-coins"></i>{% elif record.record_type == 'feed' %}<i class="fa-solid fa-wheat-awn"></i>{% else %}<i class="fa-solid fa-heart-pulse"></i>{% endif %}
+          </span>
+          <div class="farm-list-copy"><strong>{{ record.title }}</strong><small>{{ record.get_record_type_display }} · {{ record.record_date|date:"M j" }}</small></div>
+          {% if record.record_type == 'finance' %}<span class="farm-activity-amount">{{ record.amount|floatformat:2 }}</span>{% elif record.quantity %}<span class="farm-activity-amount">{{ record.quantity|floatformat:-2 }} {{ record.unit }}</span>{% endif %}
+        </div>
+        {% empty %}
+        <div class="farm-empty-inline"><span class="farm-empty-icon"><i class="fa-solid fa-leaf"></i></span><strong>Your farm story starts here</strong><small>Add an animal or log your first farm activity.</small></div>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+
+  <div class="farm-footnote"><i class="fa-regular fa-circle-question"></i> Financial amounts are shown in the currency you use for your records.</div>
+</main>
+{% endblock %}
